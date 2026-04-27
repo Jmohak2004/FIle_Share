@@ -125,6 +125,26 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('reflex-opponent-time', ms);
   });
 
+  // Relay Type Racer progress to opponent
+  socket.on('type-progress', ({ roomId, progress }) => {
+    socket.to(roomId).emit('opponent-type-progress', progress);
+  });
+
+  // Relay Math Duel answer result to opponent
+  socket.on('math-answer', ({ roomId, round, correct }) => {
+    socket.to(roomId).emit('opponent-math-answer', { round, correct });
+  });
+
+  // Relay Quiz Battle answer to opponent
+  socket.on('quiz-answer', ({ roomId, round, correct }) => {
+    socket.to(roomId).emit('opponent-quiz-answer', { round, correct });
+  });
+
+  // Relay Memory Match progress to opponent
+  socket.on('memory-progress', ({ roomId, matches }) => {
+    socket.to(roomId).emit('opponent-memory-progress', matches);
+  });
+
   socket.on('game-over', async ({ roomId, winner }) => {
     const battleId = roomBattles[roomId];
     if (battleId) {

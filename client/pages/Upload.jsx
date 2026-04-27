@@ -214,12 +214,15 @@ export default function Upload() {
           {mode === 'battle' && (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-slate-500 font-semibold uppercase tracking-widest">Choose Mini-Game</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
-                  { id: 'tic-tac-toe', label: 'Tic-Tac-Toe', icon: '⚔️' },
-                  { id: 'rps', label: 'Rock Paper Scissors', icon: '✊' },
-                  { id: 'memory', label: 'Memory Match', icon: '🧠' },
-                  { id: 'reflex', label: 'Reflex Tap', icon: '⚡' },
+                  { id: 'tic-tac-toe', label: 'Tic-Tac-Toe',           icon: '⚔️' },
+                  { id: 'rps',         label: 'Rock Paper Scissors',    icon: '✊' },
+                  { id: 'memory',      label: 'Memory Match',           icon: '🧠' },
+                  { id: 'reflex',      label: 'Reflex Tap',             icon: '⚡' },
+                  { id: 'type-racer',  label: 'Type Racer',             icon: '⌨️' },
+                  { id: 'math-duel',   label: 'Math Duel',              icon: '🔢' },
+                  { id: 'quiz-battle', label: 'Quiz Battle',            icon: '🎯' },
                 ].map(g => (
                   <button key={g.id} type="button" onClick={() => setGameType(g.id)}
                     className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-bold transition-all ${

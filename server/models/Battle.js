@@ -13,7 +13,7 @@ const BattleSchema = new mongoose.Schema({
   players: [{ type: String }],
   gameType: {
     type: String,
-    enum: ['tic-tac-toe', 'rps', 'memory', 'reflex', 'quiz-battle', 'tap-battle'],
+    enum: ['tic-tac-toe', 'rps', 'memory', 'reflex', 'type-racer', 'math-duel', 'quiz-battle'],
     required: true
   },
   moves: [MoveSchema],
