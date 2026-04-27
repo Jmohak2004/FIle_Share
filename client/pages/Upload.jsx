@@ -22,10 +22,13 @@ export default function Upload() {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('challengeType', mode === 'challenge' ? 'puzzle' : 'tic-tac-toe');
+    if (mode === 'challenge') {
+      formData.append('challengeType', 'puzzle');
+    }
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
     try {
-      const res = await axios.post('http://localhost:5001/api/files/upload', formData);
+      const res = await axios.post(`${API_URL}/api/files/upload`, formData);
       setFileId(res.data.fileId);
       setUploadSuccess(true);
     } catch (err) {

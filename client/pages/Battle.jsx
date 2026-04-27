@@ -1,31 +1,51 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { motion } from 'framer-motion';
 import { UserCircle2, Skull } from 'lucide-react';
+import axios from 'axios';
 
-const socket = io('http://localhost:5001');
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function Battle() {
   const { roomId } = useParams();
   const [status, setStatus] = useState('waiting');
-  
+  const socketRef = useRef(null);
+
   useEffect(() => {
+    const socket = io(API_URL);
+    socketRef.current = socket;
+
     socket.emit('join-room', roomId);
     socket.on('player-joined', () => setStatus('ready'));
     socket.on('game-start', () => setStatus('playing'));
     socket.on('game-end', (winner) => setStatus(`Winner: ${winner}`));
 
-    return () => socket.disconnect();
+    return () => {
+      socket.off('player-joined');
+      socket.off('game-start');
+      socket.off('game-end');
+      socket.disconnect();
+    };
   }, [roomId]);
+
+  const handleDownload = async () => {
+    try {
+      await axios.post(`${API_URL}/api/files/unlock/${roomId}`);
+      window.location.href = `${API_URL}/api/files/download/${roomId}`;
+    } catch (err) {
+      console.error(err);
+      alert('Download failed');
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden bg-slate-950">
-      
+
       {/* Background Neon Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
 
-      <motion.div 
+      <motion.div
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="text-center z-10 mb-12"
@@ -38,9 +58,9 @@ export default function Battle() {
       </motion.div>
 
       <div className="w-full max-w-4xl z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-        
+
         {/* Player 1 Card */}
-        <motion.div 
+        <motion.div
           className="glass-panel p-8 rounded-3xl w-64 flex flex-col items-center border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.1)]"
           initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
         >
@@ -64,7 +84,7 @@ export default function Battle() {
               </div>
             </div>
           )}
-          
+
           {status === 'ready' && (
             <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} className="text-center">
               <p className="text-2xl text-green-400 font-black tracking-widest neon-text">CHALLENGER IDENTIFIED</p>
@@ -89,7 +109,10 @@ export default function Battle() {
           {status.startsWith('Winner') && (
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
               <p className="text-4xl text-green-500 font-black neon-text uppercase drop-shadow-2xl">{status}</p>
-              <button className="mt-6 px-6 py-2 bg-green-500 text-black font-bold rounded-full cursor-pointer hover:bg-green-400">
+              <button
+                onClick={handleDownload}
+                className="mt-6 px-6 py-2 bg-green-500 text-black font-bold rounded-full cursor-pointer hover:bg-green-400"
+              >
                 Download Payload
               </button>
             </motion.div>
@@ -97,7 +120,7 @@ export default function Battle() {
         </div>
 
         {/* Player 2 Card */}
-        <motion.div 
+        <motion.div
           className="glass-panel p-8 rounded-3xl w-64 flex flex-col items-center border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)]"
           initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
         >
