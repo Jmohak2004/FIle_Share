@@ -8,6 +8,8 @@ const FileSchema = new mongoose.Schema({
   receiverId: { type: String },
   fileUrl: { type: String, required: true },
   originalName: { type: String, default: null },
+  mimeType: { type: String, default: null },
+  fileSize: { type: Number, default: null },
   gameType: { type: String, default: 'tic-tac-toe' },
   expiryTime: { type: Date, required: true },
   status: { type: String, enum: ['locked', 'unlocked', 'expired'], default: 'locked' },

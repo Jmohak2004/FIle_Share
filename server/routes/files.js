@@ -5,19 +5,48 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const archiver = require('archiver');
 const File = require('../models/File');
 const Challenge = require('../models/Challenge');
 
 const upload = multer({ dest: 'uploads/' });
 
-router.post('/upload', upload.single('file'), async (req, res) => {
+// Upload one or more files (multiple → zipped automatically)
+router.post('/upload', upload.array('files', 10), async (req, res) => {
   try {
     const { senderId, challengeType, senderEmail, webhookUrl, gameType } = req.body;
     const fileId = Date.now().toString();
     const expiryTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const fileUrl = req.file ? req.file.path : 'dummy.txt';
-    const originalName = req.file?.originalname || null;
+    const uploadedFiles = req.files || [];
+    if (uploadedFiles.length === 0) return res.status(400).json({ error: 'No files uploaded' });
+
+    let fileUrl, originalName, mimeType, fileSize;
+
+    if (uploadedFiles.length === 1) {
+      fileUrl = uploadedFiles[0].path;
+      originalName = uploadedFiles[0].originalname;
+      mimeType = uploadedFiles[0].mimetype;
+      fileSize = uploadedFiles[0].size;
+    } else {
+      // Zip multiple files
+      const zipPath = `uploads/${fileId}.zip`;
+      await new Promise((resolve, reject) => {
+        const output = fs.createWriteStream(zipPath);
+        const archive = archiver('zip', { zlib: { level: 6 } });
+        output.on('close', resolve);
+        archive.on('error', reject);
+        archive.pipe(output);
+        uploadedFiles.forEach(f => archive.file(f.path, { name: f.originalname }));
+        archive.finalize();
+      });
+      // Remove individual temp files
+      uploadedFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (_) {} });
+      fileUrl = zipPath;
+      originalName = `bundle_${fileId}.zip`;
+      mimeType = 'application/zip';
+      fileSize = fs.statSync(zipPath).size;
+    }
 
     const newFile = new File({
       fileId,
@@ -26,13 +55,16 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       webhookUrl: webhookUrl || null,
       fileUrl,
       originalName,
+      mimeType,
+      fileSize,
       gameType: gameType || 'tic-tac-toe',
       expiryTime,
     });
     await newFile.save();
 
     if (challengeType) {
-      const challenge = new Challenge({
+      const Challenge2 = require('../models/Challenge');
+      const challenge = new Challenge2({
         challengeId: Date.now().toString() + 'c',
         fileId,
         challengeType,
@@ -40,9 +72,43 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       await challenge.save();
     }
 
-    res.json({ fileId, message: 'File uploaded successfully' });
+    res.json({ fileId, message: 'File uploaded successfully', originalName, mimeType, fileSize });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Public metadata (no file content exposed)
+router.get('/info/:fileId', async (req, res) => {
+  try {
+    const file = await File.findOne({ fileId: req.params.fileId });
+    if (!file) return res.status(404).json({ error: 'File not found' });
+    res.json({
+      fileId: file.fileId,
+      originalName: file.originalName,
+      mimeType: file.mimeType,
+      fileSize: file.fileSize,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Inline image preview (locked files, just for thumbnail)
+router.get('/preview/:fileId', async (req, res) => {
+  try {
+    const file = await File.findOne({ fileId: req.params.fileId });
+    if (!file) return res.status(404).json({ error: 'File not found' });
+    if (!file.mimeType?.startsWith('image/')) return res.status(415).json({ error: 'Not an image' });
+
+    const filePath = path.resolve(file.fileUrl);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on disk' });
+
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    fs.createReadStream(filePath).pipe(res);
+  } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -85,7 +151,6 @@ router.get('/download/:fileId', async (req, res) => {
       return res.status(404).json({ error: 'File not found on disk' });
     }
 
-    // Fire webhook asynchronously — don't block the download
     if (file.webhookUrl) {
       fireWebhook(file.webhookUrl, {
         event: 'file.downloaded',

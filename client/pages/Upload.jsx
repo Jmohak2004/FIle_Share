@@ -1,10 +1,10 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   UploadCloud, Swords, Puzzle, FileAudio, FileText, FileImage,
-  ShieldCheck, CheckCircle, Copy, ArrowRight, QrCode, Zap,
+  ShieldCheck, CheckCircle, Copy, ArrowRight, QrCode, Zap, X,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
@@ -12,13 +12,50 @@ import { sounds } from '../src/sounds';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
+function FilePreview({ file }) {
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  if (!previewUrl) return null;
+
+  if (file.type.startsWith('image/')) {
+    return (
+      <div className="mt-3 flex justify-center">
+        <img
+          src={previewUrl}
+          alt="preview"
+          className="max-h-40 rounded-2xl object-cover border border-white/10 shadow-lg"
+        />
+      </div>
+    );
+  }
+
+  if (file.type.startsWith('audio/')) {
+    return (
+      <div className="mt-3">
+        <audio controls src={previewUrl} className="w-full rounded-xl" style={{ colorScheme: 'dark' }} />
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default function Upload() {
-  const [file, setFile]               = useState(null);
+  const [files, setFiles]             = useState([]);
   const [isDragging, setIsDragging]   = useState(false);
   const [mode, setMode]               = useState('challenge');
   const [loading, setLoading]         = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [fileId, setFileId]           = useState('');
+  const [uploadedName, setUploadedName] = useState('');
+  const [uploadedMime, setUploadedMime] = useState('');
   const [copied, setCopied]           = useState(false);
   const [showQR, setShowQR]           = useState(false);
   const [senderEmail, setSenderEmail] = useState('');
@@ -28,36 +65,40 @@ export default function Upload() {
   const navigate     = useNavigate();
   const fileInputRef = useRef(null);
 
-  const acceptFile = useCallback((f) => {
-    if (!f) return;
-    setFile(f);
-    toast.success(`${f.name} ready to upload`);
+  const acceptFiles = useCallback((newFiles) => {
+    if (!newFiles || newFiles.length === 0) return;
+    const arr = Array.from(newFiles);
+    setFiles(prev => {
+      const combined = [...prev, ...arr];
+      if (combined.length > 10) {
+        toast.error('Max 10 files');
+        return combined.slice(0, 10);
+      }
+      return combined;
+    });
+    toast.success(`${arr.length} file${arr.length > 1 ? 's' : ''} added`);
   }, []);
 
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
-    setIsDragging(true);
+  const removeFile = useCallback((index) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   }, []);
 
-  const handleDragLeave = useCallback((e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
+  const handleDragOver = useCallback((e) => { e.preventDefault(); setIsDragging(true); }, []);
+  const handleDragLeave = useCallback((e) => { e.preventDefault(); setIsDragging(false); }, []);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     setIsDragging(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped) acceptFile(dropped);
-  }, [acceptFile]);
+    acceptFiles(e.dataTransfer.files);
+  }, [acceptFiles]);
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!file) { toast.error('Select a file first'); return; }
+    if (files.length === 0) { toast.error('Select at least one file'); return; }
     setLoading(true);
 
     const formData = new FormData();
-    formData.append('file', file);
+    files.forEach(f => formData.append('files', f));
     if (mode === 'challenge') formData.append('challengeType', 'puzzle');
     if (senderEmail.trim()) formData.append('senderEmail', senderEmail.trim());
     if (webhookUrl.trim()) formData.append('webhookUrl', webhookUrl.trim());
@@ -66,6 +107,8 @@ export default function Upload() {
     try {
       const res = await axios.post(`${API_URL}/api/files/upload`, formData);
       setFileId(res.data.fileId);
+      setUploadedName(res.data.originalName || files[0]?.name || '');
+      setUploadedMime(res.data.mimeType || '');
       setUploadSuccess(true);
       sounds.upload();
       toast.success('Arena created! Share the link with your opponent.');
@@ -77,12 +120,11 @@ export default function Upload() {
     }
   };
 
-  const getFileIcon = () => {
-    if (!file) return <UploadCloud size={48} className={`transition-colors ${isDragging ? 'text-blue-400' : 'text-slate-400 group-hover:text-blue-400'}`} />;
-    const type = file.type;
-    if (type.includes('image')) return <FileImage size={48} className="text-pink-400" />;
-    if (type.includes('audio')) return <FileAudio size={48} className="text-purple-400" />;
-    return <FileText size={48} className="text-blue-400" />;
+  const getFileIcon = (file) => {
+    if (!file) return <UploadCloud size={40} className={`transition-colors ${isDragging ? 'text-blue-400' : 'text-slate-400 group-hover:text-blue-400'}`} />;
+    if (file.type.includes('image')) return <FileImage size={28} className="text-pink-400" />;
+    if (file.type.includes('audio')) return <FileAudio size={28} className="text-purple-400" />;
+    return <FileText size={28} className="text-blue-400" />;
   };
 
   if (uploadSuccess) {
@@ -98,7 +140,21 @@ export default function Upload() {
             <CheckCircle size={40} className="text-green-400" />
           </div>
           <h2 className="text-3xl font-black mb-2 text-white">Payload Secured</h2>
-          <p className="text-slate-400 mb-8">Share this link or code with your opponent to initiate the match.</p>
+          <p className="text-slate-400 mb-4">Share this link or code with your opponent to initiate the match.</p>
+
+          {/* File preview on success screen */}
+          {files.length === 1 && (
+            <div className="mb-6">
+              <FilePreview file={files[0]} />
+              <p className="text-xs text-slate-500 font-mono mt-2">{uploadedName}</p>
+            </div>
+          )}
+          {files.length > 1 && (
+            <div className="mb-6 flex items-center gap-2 justify-center text-sm text-slate-400">
+              <FileText size={14} className="text-purple-400" />
+              <span className="font-mono">{files.length} files → {uploadedName}</span>
+            </div>
+          )}
 
           <div className="bg-slate-900/80 p-4 rounded-2xl flex items-center justify-between border border-white/5 mb-4 shadow-inner">
             <div className="truncate text-left flex-1 min-w-0 mr-4 text-slate-300 font-mono text-sm">
@@ -174,42 +230,75 @@ export default function Upload() {
         </div>
 
         <h2 className="text-4xl font-black mb-2 tracking-tight">Prepare the Arena</h2>
-        <p className="text-slate-400 mb-10 text-lg">Upload your file and choose how recipients will fight for it.</p>
+        <p className="text-slate-400 mb-10 text-lg">Upload your file(s) and choose how recipients will fight for it.</p>
 
         <form onSubmit={handleUpload} className="flex flex-col gap-8">
 
           {/* Drop zone */}
-          <div
-            onClick={() => fileInputRef.current.click()}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`group relative h-48 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
-              isDragging
-                ? 'border-blue-400 bg-blue-900/20 scale-[1.01]'
-                : 'border-slate-600 hover:border-blue-500 bg-slate-900/50 hover:bg-slate-800/50'
-            }`}
-          >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={(e) => acceptFile(e.target.files[0])}
-              className="hidden"
-            />
-            {getFileIcon()}
-            <p className="mt-4 font-semibold text-lg text-slate-300">
-              {isDragging ? 'Drop it here!' : file ? file.name : 'Click or drag & drop a file'}
-            </p>
-            {!file && !isDragging && <p className="text-sm text-slate-500">Max size: 50 MB</p>}
-            {file && (
-              <span className="mt-2 text-xs font-bold px-3 py-1 bg-green-500/20 text-green-400 rounded-full">
-                {(file.size / (1024 * 1024)).toFixed(2)} MB
-              </span>
-            )}
-            {isDragging && (
-              <span className="mt-2 text-xs font-bold px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full animate-pulse">
-                Release to add
-              </span>
+          <div>
+            <div
+              onClick={() => fileInputRef.current.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`group relative rounded-3xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all p-8 ${
+                isDragging
+                  ? 'border-blue-400 bg-blue-900/20 scale-[1.01]'
+                  : 'border-slate-600 hover:border-blue-500 bg-slate-900/50 hover:bg-slate-800/50'
+              }`}
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => acceptFiles(e.target.files)}
+                className="hidden"
+                multiple
+              />
+              {files.length === 0 ? (
+                <>
+                  <UploadCloud size={48} className={`transition-colors ${isDragging ? 'text-blue-400' : 'text-slate-400 group-hover:text-blue-400'}`} />
+                  <p className="mt-4 font-semibold text-lg text-slate-300">
+                    {isDragging ? 'Drop files here!' : 'Click or drag & drop files'}
+                  </p>
+                  <p className="text-sm text-slate-500">Multiple files OK — they'll be bundled into a zip · Max 50 MB each</p>
+                </>
+              ) : (
+                <p className="text-sm text-slate-400 font-semibold">
+                  {files.length} file{files.length > 1 ? 's' : ''} selected · Click to add more
+                </p>
+              )}
+              {isDragging && (
+                <span className="mt-2 text-xs font-bold px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full animate-pulse">
+                  Release to add
+                </span>
+              )}
+            </div>
+
+            {/* File list */}
+            {files.length > 0 && (
+              <div className="mt-3 flex flex-col gap-2">
+                {files.map((f, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-slate-900/60 border border-white/5 rounded-xl px-3 py-2">
+                    {getFileIcon(f)}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-300 text-sm font-mono truncate">{f.name}</p>
+                      <p className="text-slate-600 text-xs">{(f.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="text-slate-600 hover:text-red-400 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Preview first file if it's image or audio */}
+                {files.length === 1 && (
+                  <FilePreview file={files[0]} />
+                )}
+              </div>
             )}
           </div>
 
@@ -292,7 +381,7 @@ export default function Upload() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || files.length === 0}
             className="w-full mt-2 py-5 bg-white text-slate-950 rounded-2xl font-bold text-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.02] active:scale-95"
           >
             {loading ? (

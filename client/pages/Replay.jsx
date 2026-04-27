@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, SkipBack, SkipForward, Home, Trophy } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Home, Trophy, Clock } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -17,6 +17,14 @@ function checkWinner(board) {
     if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
   }
   return null;
+}
+
+function formatRelTime(ms) {
+  if (!ms) return '';
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  if (m > 0) return `${m}m ${s % 60}s`;
+  return `${s}s`;
 }
 
 export default function Replay() {
@@ -68,18 +76,29 @@ export default function Replay() {
     );
   }
 
-  // Build board state up to current step
-  const board = Array(9).fill(null);
   const moves = battle.moves.filter(m => m.cellIndex != null);
+  const startTs = moves[0]?.timestamp || null;
+
+  // Board at current step
+  const board = Array(9).fill(null);
   for (let i = 0; i < Math.min(step, moves.length); i++) {
     const { player, cellIndex } = moves[i];
     board[cellIndex] = player === battle.players[0] ? 'X' : 'O';
   }
   const winner = checkWinner(board);
 
+  // Current move info
+  const currentMove = step > 0 && step <= moves.length ? moves[step - 1] : null;
+  const currentSymbol = currentMove
+    ? (currentMove.player === battle.players[0] ? 'X' : 'O')
+    : null;
+  const relTime = currentMove && startTs
+    ? currentMove.timestamp - startTs
+    : null;
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-slate-950 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -95,12 +114,12 @@ export default function Replay() {
         {/* Winner banner */}
         {battle.winner && (
           <div className="flex items-center justify-center gap-2 mb-6 py-2 px-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-yellow-400 font-bold text-sm">
-            <Trophy size={16} /> Winner: {battle.winner}
+            <Trophy size={16} /> Winner: <span className="font-mono text-xs ml-1">{battle.winner.slice(0, 12)}…</span>
           </div>
         )}
 
         {/* Board */}
-        <div className="grid grid-cols-3 gap-2 mx-auto w-52 h-52 bg-slate-800 p-2 rounded-2xl mb-6">
+        <div className="grid grid-cols-3 gap-2 mx-auto w-52 h-52 bg-slate-800 p-2 rounded-2xl mb-4">
           {board.map((cell, i) => (
             <motion.div
               key={i}
@@ -116,10 +135,71 @@ export default function Replay() {
           ))}
         </div>
 
+        {/* Current move info */}
+        <AnimatePresence mode="wait">
+          {currentMove ? (
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-center gap-3 mb-4 text-xs font-mono"
+            >
+              <span className={`font-black text-sm ${currentSymbol === 'X' ? 'text-blue-400' : 'text-rose-400'}`}>
+                {currentSymbol}
+              </span>
+              <span className="text-slate-500">→ cell {currentMove.cellIndex}</span>
+              {relTime != null && (
+                <span className="flex items-center gap-1 text-slate-600">
+                  <Clock size={10} /> +{formatRelTime(relTime)}
+                </span>
+              )}
+            </motion.div>
+          ) : (
+            <div className="h-6 mb-4" />
+          )}
+        </AnimatePresence>
+
         {/* Progress */}
         <p className="text-slate-500 text-sm font-mono mb-4">
           Move {Math.min(step, moves.length)} / {moves.length}
+          {winner && step >= moves.length && (
+            <span className={`ml-2 font-bold ${winner === 'X' ? 'text-blue-400' : 'text-rose-400'}`}>
+              · {winner} wins
+            </span>
+          )}
         </p>
+
+        {/* Move timeline */}
+        {moves.length > 0 && (
+          <div className="flex gap-1 justify-center mb-4 flex-wrap">
+            {moves.map((m, i) => {
+              const sym = m.player === battle.players[0] ? 'X' : 'O';
+              const active = i < step;
+              const current = i === step - 1;
+              return (
+                <button
+                  key={i}
+                  onClick={() => { setPlaying(false); setStep(i + 1); }}
+                  title={`Move ${i + 1}: ${sym} at cell ${m.cellIndex}${m.timestamp && startTs ? ` (+${formatRelTime(m.timestamp - startTs)})` : ''}`}
+                  className={`w-6 h-6 rounded text-[10px] font-black transition-all border ${
+                    current
+                      ? sym === 'X'
+                        ? 'bg-blue-500 border-blue-400 text-white scale-110'
+                        : 'bg-rose-500 border-rose-400 text-white scale-110'
+                      : active
+                      ? sym === 'X'
+                        ? 'bg-blue-900/60 border-blue-700 text-blue-400'
+                        : 'bg-rose-900/60 border-rose-700 text-rose-400'
+                      : 'bg-slate-800 border-white/5 text-slate-600'
+                  }`}
+                >
+                  {sym}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Controls */}
         <div className="flex items-center justify-center gap-3">
@@ -131,19 +211,19 @@ export default function Replay() {
           </button>
           <button
             onClick={() => setStep(s => Math.max(0, s - 1))}
-            className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"
+            className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors text-lg font-bold"
           >
             ‹
           </button>
           <button
-            onClick={() => { setStep(0); setPlaying(v => !v); }}
+            onClick={() => { if (step >= moves.length) setStep(0); setPlaying(v => !v); }}
             className="p-4 bg-purple-600 hover:bg-purple-500 rounded-xl text-white transition-colors"
           >
             {playing ? <Pause size={20} /> : <Play size={20} />}
           </button>
           <button
             onClick={() => setStep(s => Math.min(moves.length, s + 1))}
-            className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"
+            className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors text-lg font-bold"
           >
             ›
           </button>
