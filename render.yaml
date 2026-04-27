@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: filefight-server
+    env: node
+    region: oregon
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false          # Set this in Render dashboard → your MongoDB Atlas URI
+      - key: JWT_SECRET
+        generateValue: true  # Render auto-generates a secure value
+      - key: CLIENT_URL
+        sync: false          # Set to your Vercel URL, e.g. https://your-app.vercel.app
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false          # Optional — Gmail address for notifications
+      - key: SMTP_PASS
+        sync: false          # Optional — Gmail app password
+    # Uncomment the disk block below (requires Render paid plan) to persist uploads across deploys.
+    # On the free plan, uploaded files are ephemeral and wiped on each redeploy.
+    # disk:
+    #   name: filefight-uploads
+    #   mountPath: /var/data/uploads
+    #   sizeGB: 1
+    # If using the disk, also add this env var:
+    # - key: UPLOADS_DIR
+    #   value: /var/data/uploads

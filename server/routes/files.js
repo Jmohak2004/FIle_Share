@@ -9,7 +9,11 @@ const archiver = require('archiver');
 const File = require('../models/File');
 const Challenge = require('../models/Challenge');
 
-const upload = multer({ dest: 'uploads/' });
+const UPLOADS_DIR = process.env.UPLOADS_DIR || 'uploads';
+const upload = multer({
+  dest: UPLOADS_DIR,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB per file
+});
 
 // Upload one or more files (multiple → zipped automatically)
 router.post('/upload', upload.array('files', 10), async (req, res) => {
@@ -30,7 +34,7 @@ router.post('/upload', upload.array('files', 10), async (req, res) => {
       fileSize = uploadedFiles[0].size;
     } else {
       // Zip multiple files
-      const zipPath = `uploads/${fileId}.zip`;
+      const zipPath = path.join(UPLOADS_DIR, `${fileId}.zip`);
       await new Promise((resolve, reject) => {
         const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', { zlib: { level: 6 } });

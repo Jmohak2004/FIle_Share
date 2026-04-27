@@ -3,6 +3,8 @@ const http = require('http');
 const crypto = require('crypto');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const fs = require('fs');
+const path = require('path');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const Battle = require('./models/Battle');
@@ -11,18 +13,33 @@ const { sendEmail } = require('./utils/email');
 
 dotenv.config();
 
+// Ensure uploads directory exists at startup
+const UPLOADS_DIR = process.env.UPLOADS_DIR || 'uploads';
+fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+// Allowed origins: CLIENT_URL env var + localhost dev
+const CLIENT_URL = process.env.CLIENT_URL || '';
+const allowedOrigins = CLIENT_URL
+  ? [CLIENT_URL, 'http://localhost:5173', 'http://localhost:5174']
+  : '*';
+
 const app = express();
 const server = http.createServer(app);
+
+// Trust Render's reverse proxy so express sees correct IP/protocol
+app.set('trust proxy', 1);
 
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/filefight')
   .then(() => console.log('MongoDB connected successfully'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] }
+  cors: { origin: allowedOrigins, methods: ['GET', 'POST'] },
+  // Render's free tier: allow long-polling fallback if WebSocket fails
+  transports: ['websocket', 'polling'],
 });
 
-app.use(cors());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 const authRoutes = require('./routes/auth');
