@@ -1,37 +1,64 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, Swords, Puzzle, FileAudio, FileText, FileImage, ShieldCheck, CheckCircle, Copy, ArrowRight, QrCode, Zap, Brain } from 'lucide-react';
+import {
+  UploadCloud, Swords, Puzzle, FileAudio, FileText, FileImage,
+  ShieldCheck, CheckCircle, Copy, ArrowRight, QrCode, Zap,
+} from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { toast } from 'sonner';
+import { sounds } from '../src/sounds';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function Upload() {
-  const [file, setFile] = useState(null);
-  const [mode, setMode] = useState('challenge');
-  const [loading, setLoading] = useState(false);
+  const [file, setFile]               = useState(null);
+  const [isDragging, setIsDragging]   = useState(false);
+  const [mode, setMode]               = useState('challenge');
+  const [loading, setLoading]         = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [fileId, setFileId] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [showQR, setShowQR] = useState(false);
+  const [fileId, setFileId]           = useState('');
+  const [copied, setCopied]           = useState(false);
+  const [showQR, setShowQR]           = useState(false);
   const [senderEmail, setSenderEmail] = useState('');
-  const [webhookUrl, setWebhookUrl] = useState('');
-  const [gameType, setGameType] = useState('tic-tac-toe');
+  const [webhookUrl, setWebhookUrl]   = useState('');
+  const [gameType, setGameType]       = useState('tic-tac-toe');
 
-  const navigate = useNavigate();
+  const navigate     = useNavigate();
   const fileInputRef = useRef(null);
+
+  const acceptFile = useCallback((f) => {
+    if (!f) return;
+    setFile(f);
+    toast.success(`${f.name} ready to upload`);
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) acceptFile(dropped);
+  }, [acceptFile]);
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!file) return alert('Select file first');
+    if (!file) { toast.error('Select a file first'); return; }
     setLoading(true);
 
     const formData = new FormData();
     formData.append('file', file);
-    if (mode === 'challenge') {
-      formData.append('challengeType', 'puzzle');
-    }
+    if (mode === 'challenge') formData.append('challengeType', 'puzzle');
     if (senderEmail.trim()) formData.append('senderEmail', senderEmail.trim());
     if (webhookUrl.trim()) formData.append('webhookUrl', webhookUrl.trim());
     if (mode === 'battle') formData.append('gameType', gameType);
@@ -40,16 +67,18 @@ export default function Upload() {
       const res = await axios.post(`${API_URL}/api/files/upload`, formData);
       setFileId(res.data.fileId);
       setUploadSuccess(true);
+      sounds.upload();
+      toast.success('Arena created! Share the link with your opponent.');
     } catch (err) {
       console.error(err);
-      alert('Upload failed');
+      toast.error('Upload failed — please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const getFileIcon = () => {
-    if (!file) return <UploadCloud size={48} className="text-slate-400 group-hover:text-blue-400 transition-colors" />;
+    if (!file) return <UploadCloud size={48} className={`transition-colors ${isDragging ? 'text-blue-400' : 'text-slate-400 group-hover:text-blue-400'}`} />;
     const type = file.type;
     if (type.includes('image')) return <FileImage size={48} className="text-pink-400" />;
     if (type.includes('audio')) return <FileAudio size={48} className="text-purple-400" />;
@@ -79,16 +108,15 @@ export default function Upload() {
               onClick={() => {
                 navigator.clipboard.writeText(shareUrl);
                 setCopied(true);
+                toast.success('Link copied!');
                 setTimeout(() => setCopied(false), 2000);
               }}
               className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors shrink-0"
-              title="Copy Link"
             >
               {copied ? <CheckCircle size={20} className="text-green-400" /> : <Copy size={20} className="text-blue-400" />}
             </button>
           </div>
 
-          {/* QR Code toggle */}
           <button
             onClick={() => setShowQR(v => !v)}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition-colors mb-4 text-sm font-semibold"
@@ -106,14 +134,7 @@ export default function Upload() {
                 className="overflow-hidden mb-6"
               >
                 <div className="flex flex-col items-center gap-3 bg-white rounded-2xl p-6">
-                  <QRCodeSVG
-                    value={shareUrl}
-                    size={180}
-                    bgColor="#ffffff"
-                    fgColor="#0f172a"
-                    level="H"
-                    includeMargin={false}
-                  />
+                  <QRCodeSVG value={shareUrl} size={180} bgColor="#ffffff" fgColor="#0f172a" level="H" includeMargin={false} />
                   <p className="text-slate-500 text-xs font-mono mt-1">Scan to open arena</p>
                 </div>
               </motion.div>
@@ -132,7 +153,7 @@ export default function Upload() {
 
           <button
             onClick={() => navigate(`/battle/${fileId}`)}
-            className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]"
+            className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
           >
             Enter Arena Now <ArrowRight size={20} />
           </button>
@@ -157,37 +178,50 @@ export default function Upload() {
 
         <form onSubmit={handleUpload} className="flex flex-col gap-8">
 
+          {/* Drop zone */}
           <div
             onClick={() => fileInputRef.current.click()}
-            className="group relative h-48 rounded-3xl border-2 border-dashed border-slate-600 hover:border-blue-500 bg-slate-900/50 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-slate-800/50"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`group relative h-48 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+              isDragging
+                ? 'border-blue-400 bg-blue-900/20 scale-[1.01]'
+                : 'border-slate-600 hover:border-blue-500 bg-slate-900/50 hover:bg-slate-800/50'
+            }`}
           >
             <input
               type="file"
               ref={fileInputRef}
-              onChange={(e) => setFile(e.target.files[0])}
+              onChange={(e) => acceptFile(e.target.files[0])}
               className="hidden"
             />
             {getFileIcon()}
             <p className="mt-4 font-semibold text-lg text-slate-300">
-              {file ? file.name : "Click to select a file"}
+              {isDragging ? 'Drop it here!' : file ? file.name : 'Click or drag & drop a file'}
             </p>
-            {!file && <p className="text-sm text-slate-500">Max size: 50MB</p>}
-
+            {!file && !isDragging && <p className="text-sm text-slate-500">Max size: 50 MB</p>}
             {file && (
               <span className="mt-2 text-xs font-bold px-3 py-1 bg-green-500/20 text-green-400 rounded-full">
                 {(file.size / (1024 * 1024)).toFixed(2)} MB
               </span>
             )}
+            {isDragging && (
+              <span className="mt-2 text-xs font-bold px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full animate-pulse">
+                Release to add
+              </span>
+            )}
           </div>
 
+          {/* Mode selector */}
           <div className="grid sm:grid-cols-2 gap-4">
             <button
               type="button"
               onClick={() => setMode('challenge')}
-              className={`relative overflow-hidden flex flex-col items-center gap-3 p-6 rounded-2xl font-bold transition-all border ${
+              className={`relative flex flex-col items-center gap-3 p-6 rounded-2xl font-bold transition-all border ${
                 mode === 'challenge'
-                ? 'bg-purple-900/40 border-purple-500 text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
-                : 'bg-slate-900/50 border-white/5 text-slate-400 hover:bg-slate-800'
+                  ? 'bg-purple-900/40 border-purple-500 text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
+                  : 'bg-slate-900/50 border-white/5 text-slate-400 hover:bg-slate-800'
               }`}
             >
               <Puzzle size={32} />
@@ -198,10 +232,10 @@ export default function Upload() {
             <button
               type="button"
               onClick={() => setMode('battle')}
-              className={`relative overflow-hidden flex flex-col items-center gap-3 p-6 rounded-2xl font-bold transition-all border ${
+              className={`relative flex flex-col items-center gap-3 p-6 rounded-2xl font-bold transition-all border ${
                 mode === 'battle'
-                ? 'bg-rose-900/40 border-rose-500 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.2)]'
-                : 'bg-slate-900/50 border-white/5 text-slate-400 hover:bg-slate-800'
+                  ? 'bg-rose-900/40 border-rose-500 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.2)]'
+                  : 'bg-slate-900/50 border-white/5 text-slate-400 hover:bg-slate-800'
               }`}
             >
               <Swords size={32} />
@@ -210,19 +244,19 @@ export default function Upload() {
             </button>
           </div>
 
-          {/* Game type selector (battle mode only) */}
+          {/* Game type selector */}
           {mode === 'battle' && (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-slate-500 font-semibold uppercase tracking-widest">Choose Mini-Game</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
-                  { id: 'tic-tac-toe', label: 'Tic-Tac-Toe',           icon: '⚔️' },
-                  { id: 'rps',         label: 'Rock Paper Scissors',    icon: '✊' },
-                  { id: 'memory',      label: 'Memory Match',           icon: '🧠' },
-                  { id: 'reflex',      label: 'Reflex Tap',             icon: '⚡' },
-                  { id: 'type-racer',  label: 'Type Racer',             icon: '⌨️' },
-                  { id: 'math-duel',   label: 'Math Duel',              icon: '🔢' },
-                  { id: 'quiz-battle', label: 'Quiz Battle',            icon: '🎯' },
+                  { id: 'tic-tac-toe', label: 'Tic-Tac-Toe',          icon: '⚔️' },
+                  { id: 'rps',         label: 'Rock Paper Scissors',   icon: '✊' },
+                  { id: 'memory',      label: 'Memory Match',          icon: '🧠' },
+                  { id: 'reflex',      label: 'Reflex Tap',            icon: '⚡' },
+                  { id: 'type-racer',  label: 'Type Racer',            icon: '⌨️' },
+                  { id: 'math-duel',   label: 'Math Duel',             icon: '🔢' },
+                  { id: 'quiz-battle', label: 'Quiz Battle',           icon: '🎯' },
                 ].map(g => (
                   <button key={g.id} type="button" onClick={() => setGameType(g.id)}
                     className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-bold transition-all ${
@@ -262,9 +296,9 @@ export default function Upload() {
             className="w-full mt-2 py-5 bg-white text-slate-950 rounded-2xl font-bold text-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.02] active:scale-95"
           >
             {loading ? (
-              <span className="animate-pulse">Forging Arena...</span>
+              <span className="animate-pulse">Forging Arena…</span>
             ) : (
-              <>Create Link & Upload <UploadCloud size={20} /></>
+              <><Zap size={20} />Create Link & Upload <UploadCloud size={20} /></>
             )}
           </button>
         </form>

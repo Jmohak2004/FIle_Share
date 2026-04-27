@@ -31,7 +31,6 @@ const fileRoutes = require('./routes/files');
 app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
 
-// Replay route
 app.get('/api/battles/replay/:battleId', async (req, res) => {
   try {
     const battle = await Battle.findOne({ battleId: req.params.battleId });
@@ -44,41 +43,81 @@ app.get('/api/battles/replay/:battleId', async (req, res) => {
 
 app.get('/', (req, res) => res.send('FileFight API is running!'));
 
-// Track in-memory room → battleId mapping
-const roomBattles = {};
+// Room state tracking
+const roomBattles   = {};  // roomId -> { battleId, winnerSocketId }
+const roomPlayers   = {};  // roomId -> Set<socketId>
+const roomCreators  = {};  // roomId -> socketId (first joiner = creator)
+const roomGameTypes = {};  // roomId -> gameType (creator override)
+const reconnectTimers = {}; // roomId -> Timeout
+
+const RECONNECT_HOLD_MS = 30_000;
+
+function cleanupRoom(roomId) {
+  delete roomBattles[roomId];
+  delete roomPlayers[roomId];
+  delete roomCreators[roomId];
+  delete roomGameTypes[roomId];
+  delete reconnectTimers[roomId];
+  console.log(`Room ${roomId} cleaned up`);
+}
 
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  console.log('Connected:', socket.id);
 
   socket.on('join-room', async (roomId) => {
+    // Cancel any pending cleanup timer
+    if (reconnectTimers[roomId]) {
+      clearTimeout(reconnectTimers[roomId]);
+      delete reconnectTimers[roomId];
+      socket.to(roomId).emit('opponent-reconnected');
+    }
+
     socket.join(roomId);
+    socket.data.roomId = roomId;
+
+    if (!roomPlayers[roomId]) roomPlayers[roomId] = new Set();
+    roomPlayers[roomId].add(socket.id);
+
+    // Rejoin an in-progress battle (reconnection)
+    if (roomBattles[roomId]?.battleId) {
+      socket.emit('game-rejoin', {
+        battleId: roomBattles[roomId].battleId,
+        gameType: roomGameTypes[roomId] || 'tic-tac-toe',
+      });
+      socket.to(roomId).emit('opponent-reconnected');
+      return;
+    }
+
+    // Mark creator (first joiner)
+    if (!roomCreators[roomId]) {
+      roomCreators[roomId] = socket.id;
+      socket.emit('you-are-creator');
+    }
+
     socket.to(roomId).emit('player-joined');
 
     const roomSize = io.sockets.adapter.rooms.get(roomId)?.size ?? 0;
-
-    // Look up the game type from the File document
-    let resolvedGameType = 'tic-tac-toe';
-    try {
-      const file = await File.findOne({ fileId: roomId });
-      if (file?.gameType) resolvedGameType = file.gameType;
-    } catch (_) { /* use default */ }
-
     if (roomSize === 2) {
+      let resolvedGameType = roomGameTypes[roomId] || 'tic-tac-toe';
+      try {
+        const file = await File.findOne({ fileId: roomId });
+        if (!roomGameTypes[roomId] && file?.gameType) resolvedGameType = file.gameType;
+      } catch (_) {}
+
       const battleId = `${roomId}-${Date.now()}`;
       roomBattles[roomId] = { battleId, winnerSocketId: null };
 
       const battle = new Battle({
         battleId,
         fileId: roomId,
-        players: [socket.id],
+        players: Array.from(roomPlayers[roomId]),
         gameType: resolvedGameType,
         moves: [],
       });
-      await battle.save();
+      await battle.save().catch(err => console.error('Battle save failed:', err.message));
 
       io.in(roomId).emit('game-start', { battleId, gameType: resolvedGameType });
 
-      // Notify sender by email when opponent joins
       try {
         const file = await File.findOne({ fileId: roomId });
         if (file?.senderEmail) {
@@ -104,57 +143,67 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Creator updates the game type while waiting
+  socket.on('set-game-type', ({ roomId, gameType }) => {
+    if (roomCreators[roomId] !== socket.id) return;
+    roomGameTypes[roomId] = gameType;
+    socket.to(roomId).emit('game-type-changed', gameType);
+  });
+
   socket.on('submit-move', async ({ roomId, move }) => {
     socket.to(roomId).emit('opponent-move', move);
-
     const rb = roomBattles[roomId];
     if (rb?.battleId) {
       await Battle.findOneAndUpdate(
         { battleId: rb.battleId },
         { $push: { moves: { ...move, timestamp: Date.now() } } }
-      );
+      ).catch(() => {});
     }
   });
 
-  // Relay RPS picks to opponent
-  socket.on('rps-pick', ({ roomId, pick }) => {
-    socket.to(roomId).emit('rps-opponent-pick', pick);
+  socket.on('rps-pick',       ({ roomId, pick })     => socket.to(roomId).emit('rps-opponent-pick', pick));
+  socket.on('reflex-time',    ({ roomId, ms })        => socket.to(roomId).emit('reflex-opponent-time', ms));
+  socket.on('type-progress',  ({ roomId, progress })  => socket.to(roomId).emit('opponent-type-progress', progress));
+  socket.on('math-answer',    ({ roomId, round, correct }) => socket.to(roomId).emit('opponent-math-answer', { round, correct }));
+  socket.on('quiz-answer',    ({ roomId, round, correct }) => socket.to(roomId).emit('opponent-quiz-answer', { round, correct }));
+  socket.on('memory-progress',({ roomId, matches })   => socket.to(roomId).emit('opponent-memory-progress', matches));
+
+  // Reaction emotes
+  socket.on('reaction', ({ roomId, emoji }) => {
+    socket.to(roomId).emit('opponent-reaction', emoji);
   });
 
-  // Relay reflex times to opponent
-  socket.on('reflex-time', ({ roomId, ms }) => {
-    socket.to(roomId).emit('reflex-opponent-time', ms);
+  // Rematch flow
+  socket.on('rematch-request', ({ roomId }) => {
+    socket.to(roomId).emit('rematch-requested');
   });
 
-  // Relay Type Racer progress to opponent
-  socket.on('type-progress', ({ roomId, progress }) => {
-    socket.to(roomId).emit('opponent-type-progress', progress);
-  });
+  socket.on('rematch-accept', async ({ roomId, gameType }) => {
+    const resolvedType = gameType || roomGameTypes[roomId] || 'tic-tac-toe';
+    roomGameTypes[roomId] = resolvedType;
 
-  // Relay Math Duel answer result to opponent
-  socket.on('math-answer', ({ roomId, round, correct }) => {
-    socket.to(roomId).emit('opponent-math-answer', { round, correct });
-  });
+    const battleId = `${roomId}-${Date.now()}`;
+    roomBattles[roomId] = { battleId, winnerSocketId: null };
 
-  // Relay Quiz Battle answer to opponent
-  socket.on('quiz-answer', ({ roomId, round, correct }) => {
-    socket.to(roomId).emit('opponent-quiz-answer', { round, correct });
-  });
+    const battle = new Battle({
+      battleId,
+      fileId: roomId,
+      players: Array.from(roomPlayers[roomId] || []),
+      gameType: resolvedType,
+      moves: [],
+    });
+    await battle.save().catch(() => {});
 
-  // Relay Memory Match progress to opponent
-  socket.on('memory-progress', ({ roomId, matches }) => {
-    socket.to(roomId).emit('opponent-memory-progress', matches);
+    io.in(roomId).emit('rematch-start', { battleId, gameType: resolvedType });
   });
 
   socket.on('game-over', async ({ roomId, winner }) => {
-    // Only the winner fires this with winner === 'me'
     if (winner !== 'me') return;
 
     const rb = roomBattles[roomId];
-    if (!rb || rb.winnerSocketId) return; // already resolved
+    if (!rb || rb.winnerSocketId) return;
     rb.winnerSocketId = socket.id;
 
-    // Generate a one-time download token for the winner
     const token = crypto.randomBytes(16).toString('hex');
 
     try {
@@ -172,16 +221,38 @@ io.on('connection', (socket) => {
       console.error('game-over DB update failed:', err.message);
     }
 
-    // Tell each player their correct result
     socket.emit('game-end', 'me');
     socket.emit('download-token', token);
     socket.to(roomId).emit('game-end', 'opponent');
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    console.log('Disconnected:', socket.id);
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+
+    if (roomPlayers[roomId]) roomPlayers[roomId].delete(socket.id);
+
+    const gameInProgress = roomBattles[roomId]?.battleId && !roomBattles[roomId]?.winnerSocketId;
+    const playersLeft = roomPlayers[roomId]?.size ?? 0;
+
+    socket.to(roomId).emit('opponent-disconnected');
+
+    if (playersLeft === 0) {
+      // Hold room briefly in case of refresh; longer if game was in progress
+      reconnectTimers[roomId] = setTimeout(
+        () => cleanupRoom(roomId),
+        gameInProgress ? RECONNECT_HOLD_MS : 8_000
+      );
+    } else if (gameInProgress) {
+      // Opponent still connected — hold for rejoining
+      reconnectTimers[roomId] = setTimeout(() => {
+        io.in(roomId).emit('room-expired');
+        cleanupRoom(roomId);
+      }, RECONNECT_HOLD_MS);
+    }
   });
 });
 
 const PORT = process.env.PORT || 5001;
-server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -26,3 +26,13 @@
     animation-delay: 4s;
   }
 }
+
+/* Light theme — CSS filter inversion keeps all components working without rewrites */
+html.light body {
+  filter: invert(1) hue-rotate(180deg);
+}
+html.light img,
+html.light video,
+html.light [data-no-invert] {
+  filter: invert(1) hue-rotate(180deg);
+}
