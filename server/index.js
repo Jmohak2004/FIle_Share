@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const crypto = require('crypto');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { Server } = require('socket.io');
@@ -64,12 +65,12 @@ io.on('connection', (socket) => {
 
     if (roomSize === 2) {
       const battleId = `${roomId}-${Date.now()}`;
-      roomBattles[roomId] = battleId;
+      roomBattles[roomId] = { battleId, winnerSocketId: null };
 
       const battle = new Battle({
         battleId,
         fileId: roomId,
-        players: [],
+        players: [socket.id],
         gameType: resolvedGameType,
         moves: [],
       });
@@ -106,10 +107,10 @@ io.on('connection', (socket) => {
   socket.on('submit-move', async ({ roomId, move }) => {
     socket.to(roomId).emit('opponent-move', move);
 
-    const battleId = roomBattles[roomId];
-    if (battleId) {
+    const rb = roomBattles[roomId];
+    if (rb?.battleId) {
       await Battle.findOneAndUpdate(
-        { battleId },
+        { battleId: rb.battleId },
         { $push: { moves: { ...move, timestamp: Date.now() } } }
       );
     }
@@ -146,14 +147,35 @@ io.on('connection', (socket) => {
   });
 
   socket.on('game-over', async ({ roomId, winner }) => {
-    const battleId = roomBattles[roomId];
-    if (battleId) {
-      await Battle.findOneAndUpdate(
-        { battleId },
-        { winner, endedAt: new Date() }
+    // Only the winner fires this with winner === 'me'
+    if (winner !== 'me') return;
+
+    const rb = roomBattles[roomId];
+    if (!rb || rb.winnerSocketId) return; // already resolved
+    rb.winnerSocketId = socket.id;
+
+    // Generate a one-time download token for the winner
+    const token = crypto.randomBytes(16).toString('hex');
+
+    try {
+      if (rb.battleId) {
+        await Battle.findOneAndUpdate(
+          { battleId: rb.battleId },
+          { winner: socket.id, endedAt: new Date() }
+        );
+      }
+      await File.findOneAndUpdate(
+        { fileId: roomId },
+        { downloadToken: token, status: 'unlocked' }
       );
+    } catch (err) {
+      console.error('game-over DB update failed:', err.message);
     }
-    io.in(roomId).emit('game-end', winner);
+
+    // Tell each player their correct result
+    socket.emit('game-end', 'me');
+    socket.emit('download-token', token);
+    socket.to(roomId).emit('game-end', 'opponent');
   });
 
   socket.on('disconnect', () => {

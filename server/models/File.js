@@ -10,7 +10,8 @@ const FileSchema = new mongoose.Schema({
   originalName: { type: String, default: null },
   gameType: { type: String, default: 'tic-tac-toe' },
   expiryTime: { type: Date, required: true },
-  status: { type: String, enum: ['locked', 'unlocked', 'expired'], default: 'locked' }
+  status: { type: String, enum: ['locked', 'unlocked', 'expired'], default: 'locked' },
+  downloadToken: { type: String, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('File', FileSchema);

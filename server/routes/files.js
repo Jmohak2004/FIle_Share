@@ -49,8 +49,12 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
 router.post('/unlock/:fileId', async (req, res) => {
   try {
+    const { token } = req.body;
     const file = await File.findOne({ fileId: req.params.fileId });
     if (!file) return res.status(404).json({ error: 'File not found' });
+    if (!token || file.downloadToken !== token) {
+      return res.status(403).json({ error: 'Invalid token — win the battle to unlock' });
+    }
 
     file.status = 'unlocked';
     await file.save();
@@ -70,6 +74,10 @@ router.get('/download/:fileId', async (req, res) => {
       file.status = 'expired';
       await file.save();
       return res.status(410).json({ error: 'File has expired' });
+    }
+
+    if (file.status !== 'unlocked') {
+      return res.status(403).json({ error: 'File locked — win the battle first' });
     }
 
     const filePath = path.resolve(file.fileUrl);

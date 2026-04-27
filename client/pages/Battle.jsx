@@ -32,6 +32,7 @@ export default function Battle() {
   const [battleId, setBattleId]     = useState(null);
   const [winner, setWinner]         = useState(null);   // 'me' | 'opponent' | 'draw'
   const [replayCopied, setReplayCopied] = useState(false);
+  const [downloadToken, setDownloadToken] = useState(null);
 
   // Tic-tac-toe state (managed here so server events can touch it)
   const [board, setBoard]           = useState(Array(9).fill(null));
@@ -111,11 +112,16 @@ export default function Battle() {
       setStatus('ended');
     });
 
+    socket.on('download-token', (token) => {
+      setDownloadToken(token);
+    });
+
     return () => {
       socket.off('player-joined');
       socket.off('game-start');
       socket.off('opponent-move');
       socket.off('game-end');
+      socket.off('download-token');
       socket.disconnect();
     };
   }, [roomId]); // eslint-disable-line
@@ -142,9 +148,9 @@ export default function Battle() {
 
   const handleDownload = async () => {
     try {
-      await axios.post(`${API_URL}/api/files/unlock/${roomId}`);
+      await axios.post(`${API_URL}/api/files/unlock/${roomId}`, { token: downloadToken });
       window.location.href = `${API_URL}/api/files/download/${roomId}`;
-    } catch { alert('Download failed'); }
+    } catch { alert('Download failed — make sure you won the battle.'); }
   };
 
   const replayUrl = battleId ? `${window.location.origin}/replay/${battleId}` : null;
