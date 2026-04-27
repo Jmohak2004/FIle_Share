@@ -2,12 +2,16 @@ import { useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { UploadCloud, Swords, Puzzle, FileAudio, FileText, FileImage, ShieldCheck } from 'lucide-react';
+import { UploadCloud, Swords, Puzzle, FileAudio, FileText, FileImage, ShieldCheck, CheckCircle, Copy, ArrowRight } from 'lucide-react';
 
 export default function Upload() {
   const [file, setFile] = useState(null);
   const [mode, setMode] = useState('challenge');
   const [loading, setLoading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [fileId, setFileId] = useState('');
+  const [copied, setCopied] = useState(false);
+
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -22,11 +26,8 @@ export default function Upload() {
 
     try {
       const res = await axios.post('http://localhost:5001/api/files/upload', formData);
-      if (mode === 'battle') {
-         navigate(`/battle/${res.data.fileId}`);
-      } else {
-         alert('Challenge created! Link ID: ' + res.data.fileId);
-      }
+      setFileId(res.data.fileId);
+      setUploadSuccess(true);
     } catch (err) {
       console.error(err);
       alert('Upload failed');
@@ -42,6 +43,59 @@ export default function Upload() {
     if (type.includes('audio')) return <FileAudio size={48} className="text-purple-400" />;
     return <FileText size={48} className="text-blue-400" />;
   };
+
+  if (uploadSuccess) {
+    const shareUrl = `${window.location.origin}/battle/${fileId}`;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 relative bg-slate-950">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md glass-panel p-10 rounded-[2.5rem] shadow-2xl relative z-10 text-center"
+        >
+          <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/30">
+            <CheckCircle size={40} className="text-green-400" />
+          </div>
+          <h2 className="text-3xl font-black mb-2 text-white">Payload Secured</h2>
+          <p className="text-slate-400 mb-8">Share this link or code with your opponent to initiate the match.</p>
+          
+          <div className="bg-slate-900/80 p-4 rounded-2xl flex items-center justify-between border border-white/5 mb-4 shadow-inner">
+            <div className="truncate text-left flex-1 min-w-0 mr-4 text-slate-300 font-mono text-sm">
+              {shareUrl}
+            </div>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(shareUrl);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors shrink-0"
+              title="Copy Link"
+            >
+              {copied ? <CheckCircle size={20} className="text-green-400" /> : <Copy size={20} className="text-blue-400" />}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4 my-6">
+            <div className="h-px bg-white/10 flex-1"></div>
+            <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">OR SHARE CODE</span>
+            <div className="h-px bg-white/10 flex-1"></div>
+          </div>
+
+          <div className="text-3xl font-black tracking-widest text-center text-white neon-text mb-8 bg-slate-900/50 py-4 rounded-xl border border-white/5 font-mono select-all">
+            {fileId}
+          </div>
+
+          <button 
+            onClick={() => navigate(`/battle/${fileId}`)}
+            className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]"
+          >
+            Enter Arena Now <ArrowRight size={20} />
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 relative">
@@ -59,7 +113,6 @@ export default function Upload() {
         
         <form onSubmit={handleUpload} className="flex flex-col gap-8">
           
-          {/* File Dropzone */}
           <div 
             onClick={() => fileInputRef.current.click()}
             className="group relative h-48 rounded-3xl border-2 border-dashed border-slate-600 hover:border-blue-500 bg-slate-900/50 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-slate-800/50"
@@ -83,7 +136,6 @@ export default function Upload() {
             )}
           </div>
 
-          {/* Mode Selection */}
           <div className="grid sm:grid-cols-2 gap-4">
             <button 
               type="button"
@@ -114,11 +166,10 @@ export default function Upload() {
             </button>
           </div>
 
-          {/* Submit */}
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full mt-6 py-5 bg-white text-slate-950 rounded-2xl font-bold text-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full mt-6 py-5 bg-white text-slate-950 rounded-2xl font-bold text-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.02] active:scale-95"
           >
             {loading ? (
               <span className="animate-pulse">Forging Arena...</span>

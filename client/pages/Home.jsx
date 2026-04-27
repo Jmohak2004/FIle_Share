@@ -1,11 +1,21 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Swords, UploadCloud, Gamepad2, Zap } from 'lucide-react';
+import { Swords, UploadCloud, Gamepad2, Zap, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 
 export default function Home() {
+  const [joinCode, setJoinCode] = useState('');
+  const navigate = useNavigate();
+
+  const handleJoin = (e) => {
+    e.preventDefault();
+    if (joinCode.trim()) {
+       navigate(`/battle/${joinCode.trim()}`);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden">
-      {/* Background blobs */}
       <div className="absolute top-20 left-20 w-96 h-96 bg-purple-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
       <div className="absolute top-20 right-20 w-96 h-96 bg-blue-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-32 left-1/2 w-96 h-96 bg-pink-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-4000"></div>
@@ -31,26 +41,39 @@ export default function Home() {
           Why simply send a file when users can <strong className="text-white">play for it</strong>? Transform boring transfers into interactive mini-games and real-time battles.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
-          <Link to="/upload">
+        <div className="flex flex-col items-center justify-center gap-6 pt-8 w-full max-w-md mx-auto">
+          <Link to="/upload" className="w-full">
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-3 px-8 py-4 text-lg font-bold bg-white text-slate-900 rounded-2xl hover:bg-slate-200 transition-colors shadow-[0_0_40px_rgba(255,255,255,0.3)]"
+              className="w-full flex items-center justify-center gap-3 px-8 py-4 text-lg font-bold bg-white text-slate-950 rounded-2xl hover:bg-slate-200 transition-colors shadow-[0_0_40px_rgba(255,255,255,0.3)]"
             >
               <UploadCloud size={24} />
-              Start Uploading
+              Start Uploading & Create Room
             </motion.button>
           </Link>
           
-          <button className="flex items-center gap-3 px-8 py-4 text-lg font-bold glass-panel text-white rounded-2xl hover:bg-white/10 transition-colors">
-            <Swords size={24} className="text-pink-400" />
-            See Live Battles
-          </button>
+          <div className="flex items-center gap-4 w-full my-2">
+            <div className="h-px bg-white/10 flex-1"></div>
+            <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">OR JOIN EXISTING</span>
+            <div className="h-px bg-white/10 flex-1"></div>
+          </div>
+
+          <form onSubmit={handleJoin} className="flex items-center gap-2 bg-slate-900/80 p-2 rounded-2xl border border-white/10 focus-within:border-blue-500 transition-colors w-full">
+            <input 
+               type="text" 
+               placeholder="Enter Arena Code..." 
+               value={joinCode}
+               onChange={(e) => setJoinCode(e.target.value)}
+               className="bg-transparent border-none outline-none text-white px-4 py-2 w-full placeholder:text-slate-600 font-mono tracking-widest"
+            />
+            <button type="submit" className="glass-panel text-blue-400 hover:text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-600 transition-colors flex items-center gap-2 border-blue-500/30 shrink-0">
+              Join <ArrowRight size={18} />
+            </button>
+          </form>
         </div>
       </motion.div>
 
-      {/* Feature Grid */}
       <motion.div 
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
