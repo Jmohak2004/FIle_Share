@@ -29,6 +29,7 @@ const FEATURES = [
 
 export default function Home() {
   const [joinCode, setJoinCode] = useState('');
+  const [formFocused, setFormFocused] = useState(false);
   const navigate = useNavigate();
 
   const handleJoin = (e) => {
@@ -54,15 +55,15 @@ export default function Home() {
         </div>
 
         <h1
-          className="text-[clamp(4rem,14vw,9rem)] font-black leading-[0.88] tracking-tight mb-8 uppercase"
-          style={{ fontFamily: "'Syne', sans-serif" }}
+          className="font-black leading-[0.88] tracking-tight mb-8 uppercase"
+          style={{ fontSize: 'clamp(4rem,14vw,9rem)', fontFamily: "'Syne', sans-serif", color: 'var(--text)' }}
         >
           FIGHT<br />
-          <span style={{ color: '#FF4500' }}>FOR</span>{' '}
-          <span className="text-[#EEEEEE]">IT.</span>
+          <span style={{ color: 'var(--orange)' }}>FOR</span>{' '}
+          IT.
         </h1>
 
-        <p className="text-lg leading-relaxed max-w-lg mx-auto mb-12" style={{ color: '#777' }}>
+        <p className="text-lg leading-relaxed max-w-lg mx-auto mb-12" style={{ color: 'var(--text-muted)' }}>
           Don't just send a file — make them earn it. Head-to-head mini-games,
           real-time battles, instant transfers.
         </p>
@@ -74,9 +75,9 @@ export default function Home() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
               className="w-full flex items-center justify-center gap-3 px-8 py-4 font-bold text-white text-base transition-colors"
-              style={{ backgroundColor: '#FF4500' }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FF6A00')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#FF4500')}
+              style={{ backgroundColor: 'var(--orange)' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--orange-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--orange)')}
             >
               <UploadCloud size={19} />
               Start a Battle Room
@@ -84,32 +85,32 @@ export default function Home() {
           </Link>
 
           <div className="flex items-center gap-3 w-full">
-            <div className="h-px flex-1" style={{ backgroundColor: '#222' }} />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#555' }}>or join</span>
-            <div className="h-px flex-1" style={{ backgroundColor: '#222' }} />
+            <div className="h-px flex-1" style={{ backgroundColor: 'var(--border)' }} />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: 'var(--text-faint)' }}>or join</span>
+            <div className="h-px flex-1" style={{ backgroundColor: 'var(--border)' }} />
           </div>
 
           <form
             onSubmit={handleJoin}
-            className="flex items-stretch w-full"
-            style={{ border: '1px solid #222' }}
+            className="flex items-stretch w-full transition-colors"
+            style={{ border: `1px solid ${formFocused ? 'var(--orange)' : 'var(--border)'}` }}
           >
             <input
               type="text"
               placeholder="ARENA CODE"
               value={joinCode}
               onChange={e => setJoinCode(e.target.value)}
-              className="bg-transparent outline-none text-white px-4 py-3 w-full placeholder:font-mono font-mono tracking-widest text-sm"
-              style={{ color: '#EEE' }}
-              onFocus={e => (e.currentTarget.parentElement.style.borderColor = '#FF4500')}
-              onBlur={e => (e.currentTarget.parentElement.style.borderColor = '#222')}
+              onFocus={() => setFormFocused(true)}
+              onBlur={() => setFormFocused(false)}
+              className="bg-transparent outline-none px-4 py-3 w-full font-mono tracking-widest text-sm"
+              style={{ color: 'var(--text)' }}
             />
             <button
               type="submit"
               className="px-5 font-bold text-white shrink-0 transition-colors"
-              style={{ backgroundColor: '#FF4500' }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FF6A00')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#FF4500')}
+              style={{ backgroundColor: 'var(--orange)' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--orange-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--orange)')}
             >
               <ArrowRight size={16} />
             </button>
@@ -123,28 +124,34 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.25 }}
         className="w-full max-w-5xl mt-24 z-10 grid md:grid-cols-3"
-        style={{ gap: '1px', backgroundColor: '#1a1a1a' }}
+        style={{ gap: '1px', backgroundColor: 'var(--border)' }}
       >
         {FEATURES.map((f) => (
-          <div
-            key={f.label}
-            className="flex flex-col gap-5 p-8 transition-colors group cursor-default"
-            style={{
-              backgroundColor: '#111',
-              borderTop: `2px solid ${f.accent}`,
-            }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#161616')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#111')}
-          >
-            <div className="flex items-center justify-between">
-              <div style={{ color: f.accent }}>{f.icon}</div>
-              <span className="font-mono text-xs font-bold" style={{ color: '#333' }}>{f.label}</span>
-            </div>
-            <h3 className="text-lg font-bold">{f.title}</h3>
-            <p className="text-sm leading-relaxed" style={{ color: '#666' }}>{f.desc}</p>
-          </div>
+          <FeatureCard key={f.label} f={f} />
         ))}
       </motion.div>
+    </div>
+  );
+}
+
+function FeatureCard({ f }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      className="flex flex-col gap-5 p-8 transition-colors cursor-default"
+      style={{
+        backgroundColor: hovered ? 'var(--surface-2)' : 'var(--surface)',
+        borderTop: `2px solid ${f.accent}`,
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="flex items-center justify-between">
+        <div style={{ color: f.accent }}>{f.icon}</div>
+        <span className="font-mono text-xs font-bold" style={{ color: 'var(--border-strong)' }}>{f.label}</span>
+      </div>
+      <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>{f.title}</h3>
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{f.desc}</p>
     </div>
   );
 }

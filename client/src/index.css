@@ -4,16 +4,36 @@
 
 @layer base {
   :root {
-    --orange: #FF4500;
-    --orange-light: #FF6A00;
-    --cyan: #00D4FF;
-    --green: #AAFF00;
-    --bg: #080808;
-    --surface: #111111;
-    --surface2: #181818;
-    --border: #222222;
-    --muted: #555555;
-    --text: #EEEEEE;
+    /* dark (default) */
+    --bg:            #080808;
+    --surface:       #121212;
+    --surface-2:     #0d0d0d;
+    --border:        #2a2a2a;
+    --border-strong: #3d3d3d;
+    --text:          #EEEEEE;
+    --text-muted:    #888888;
+    --text-faint:    #555555;
+    --orange:        #FF4500;
+    --orange-hover:  #FF6A00;
+    --cyan:          #00D4FF;
+    --lime:          #AAFF00;
+    --grid-line:     #1e1e1e;
+  }
+
+  html.light {
+    --bg:            #F2F2F2;
+    --surface:       #FFFFFF;
+    --surface-2:     #EBEBEB;
+    --border:        #D8D8D8;
+    --border-strong: #BBBBBB;
+    --text:          #111111;
+    --text-muted:    #555555;
+    --text-faint:    #999999;
+    --orange:        #D03000;
+    --orange-hover:  #B22800;
+    --cyan:          #007A99;
+    --lime:          #4A8A00;
+    --grid-line:     #E2E2E2;
   }
 
   body {
@@ -24,8 +44,8 @@
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
     background-image:
-      linear-gradient(var(--border) 1px, transparent 1px),
-      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
     background-size: 48px 48px;
   }
 
@@ -35,20 +55,16 @@
 }
 
 @layer utilities {
-  /* Main card style */
   .card {
     background-color: var(--surface);
     border: 1px solid var(--border);
   }
 
-  /* Backward-compat alias used across pages */
   .glass-panel {
     background-color: var(--surface);
     border: 1px solid var(--border);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
   }
 
-  /* Small label badge */
   .tag {
     display: inline-flex;
     align-items: center;
@@ -58,9 +74,9 @@
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    background-color: rgba(255, 69, 0, 0.12);
-    color: #FF4500;
-    border: 1px solid rgba(255, 69, 0, 0.25);
+    background-color: rgba(255, 69, 0, 0.1);
+    color: var(--orange);
+    border: 1px solid rgba(255, 69, 0, 0.3);
   }
 
   .neon-text {
@@ -71,30 +87,19 @@
   .animation-delay-4000 { animation-delay: 4s; }
 }
 
-/* Corner accent used on home/upload pages */
 .corner-tl {
   position: absolute;
   top: 0; left: 0;
   width: 120px; height: 120px;
-  border-left: 2px solid rgba(255,69,0,0.25);
-  border-top: 2px solid rgba(255,69,0,0.25);
+  border-left: 2px solid rgba(255,69,0,0.2);
+  border-top: 2px solid rgba(255,69,0,0.2);
   pointer-events: none;
 }
 .corner-br {
   position: absolute;
   bottom: 0; right: 0;
   width: 120px; height: 120px;
-  border-right: 2px solid rgba(255,69,0,0.25);
-  border-bottom: 2px solid rgba(255,69,0,0.25);
+  border-right: 2px solid rgba(255,69,0,0.2);
+  border-bottom: 2px solid rgba(255,69,0,0.2);
   pointer-events: none;
-}
-
-/* Light theme */
-html.light body {
-  filter: invert(1) hue-rotate(180deg);
-}
-html.light img,
-html.light video,
-html.light [data-no-invert] {
-  filter: invert(1) hue-rotate(180deg);
 }
