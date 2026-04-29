@@ -3,31 +3,93 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --orange: #FF4500;
+    --orange-light: #FF6A00;
+    --cyan: #00D4FF;
+    --green: #AAFF00;
+    --bg: #080808;
+    --surface: #111111;
+    --surface2: #181818;
+    --border: #222222;
+    --muted: #555555;
+    --text: #EEEEEE;
+  }
+
   body {
-    @apply bg-slate-950 text-slate-100 min-h-screen font-sans antialiased overflow-x-hidden;
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-      radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
-      radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+    background-color: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-family: 'Space Grotesk', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Syne', sans-serif;
   }
 }
 
 @layer utilities {
-  .glass-panel {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
+  /* Main card style */
+  .card {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
   }
+
+  /* Backward-compat alias used across pages */
+  .glass-panel {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
+  }
+
+  /* Small label badge */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background-color: rgba(255, 69, 0, 0.12);
+    color: #FF4500;
+    border: 1px solid rgba(255, 69, 0, 0.25);
+  }
+
   .neon-text {
     text-shadow: 0 0 8px currentColor, 0 0 20px currentColor;
   }
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-  .animation-delay-4000 {
-    animation-delay: 4s;
-  }
+
+  .animation-delay-2000 { animation-delay: 2s; }
+  .animation-delay-4000 { animation-delay: 4s; }
 }
 
-/* Light theme — CSS filter inversion keeps all components working without rewrites */
+/* Corner accent used on home/upload pages */
+.corner-tl {
+  position: absolute;
+  top: 0; left: 0;
+  width: 120px; height: 120px;
+  border-left: 2px solid rgba(255,69,0,0.25);
+  border-top: 2px solid rgba(255,69,0,0.25);
+  pointer-events: none;
+}
+.corner-br {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 120px; height: 120px;
+  border-right: 2px solid rgba(255,69,0,0.25);
+  border-bottom: 2px solid rgba(255,69,0,0.25);
+  pointer-events: none;
+}
+
+/* Light theme */
 html.light body {
   filter: invert(1) hue-rotate(180deg);
 }

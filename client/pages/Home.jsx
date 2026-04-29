@@ -1,7 +1,31 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Swords, UploadCloud, Gamepad2, Zap, ArrowRight } from 'lucide-react';
+import { Swords, UploadCloud, Gamepad2, ArrowRight, Zap } from 'lucide-react';
 import { useState } from 'react';
+
+const FEATURES = [
+  {
+    icon: <UploadCloud size={22} />,
+    label: '01',
+    title: 'Secure Upload',
+    desc: 'Encrypted, temporary — your file is locked behind the battle.',
+    accent: '#FF4500',
+  },
+  {
+    icon: <Gamepad2 size={22} />,
+    label: '02',
+    title: 'Challenge Mode',
+    desc: 'Puzzles, trivia, skill checks — unlock only when earned.',
+    accent: '#00D4FF',
+  },
+  {
+    icon: <Swords size={22} />,
+    label: '03',
+    title: 'Live Battles',
+    desc: 'Real-time 1v1 PvP. Loser gets nothing. Winner takes all.',
+    accent: '#AAFF00',
+  },
+];
 
 export default function Home() {
   const [joinCode, setJoinCode] = useState('');
@@ -9,100 +33,117 @@ export default function Home() {
 
   const handleJoin = (e) => {
     e.preventDefault();
-    if (joinCode.trim()) {
-       navigate(`/battle/${joinCode.trim()}`);
-    }
+    if (joinCode.trim()) navigate(`/battle/${joinCode.trim()}`);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden">
-      <div className="absolute top-20 left-20 w-96 h-96 bg-purple-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
-      <div className="absolute top-20 right-20 w-96 h-96 bg-blue-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-32 left-1/2 w-96 h-96 bg-pink-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-4000"></div>
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 relative">
+      <div className="corner-tl" />
+      <div className="corner-br" />
 
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
+      {/* Hero */}
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="z-10 text-center max-w-4xl mx-auto space-y-8"
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="z-10 text-center max-w-4xl mx-auto"
       >
-        <div className="inline-flex items-center justify-center space-x-3 mb-4 px-4 py-1.5 rounded-full glass-panel text-sm font-medium text-purple-300 border-purple-500/30">
-          <Zap size={16} className="text-yellow-400" />
-          <span>The next generation of file sharing is here</span>
+        <div className="tag mx-auto w-fit mb-8">
+          <Zap size={11} />
+          FileFight
         </div>
 
-        <h1 className="text-6xl md:text-8xl font-black tracking-tighter">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
-            FileFight
-          </span> 🥊
+        <h1
+          className="text-[clamp(4rem,14vw,9rem)] font-black leading-[0.88] tracking-tight mb-8 uppercase"
+          style={{ fontFamily: "'Syne', sans-serif" }}
+        >
+          FIGHT<br />
+          <span style={{ color: '#FF4500' }}>FOR</span>{' '}
+          <span className="text-[#EEEEEE]">IT.</span>
         </h1>
-        
-        <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          Why simply send a file when users can <strong className="text-white">play for it</strong>? Transform boring transfers into interactive mini-games and real-time battles.
+
+        <p className="text-lg leading-relaxed max-w-lg mx-auto mb-12" style={{ color: '#777' }}>
+          Don't just send a file — make them earn it. Head-to-head mini-games,
+          real-time battles, instant transfers.
         </p>
 
-        <div className="flex flex-col items-center justify-center gap-6 pt-8 w-full max-w-md mx-auto">
+        {/* CTA */}
+        <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto">
           <Link to="/upload" className="w-full">
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-full flex items-center justify-center gap-3 px-8 py-4 text-lg font-bold bg-white text-slate-950 rounded-2xl hover:bg-slate-200 transition-colors shadow-[0_0_40px_rgba(255,255,255,0.3)]"
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className="w-full flex items-center justify-center gap-3 px-8 py-4 font-bold text-white text-base transition-colors"
+              style={{ backgroundColor: '#FF4500' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FF6A00')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#FF4500')}
             >
-              <UploadCloud size={24} />
-              Start Uploading & Create Room
+              <UploadCloud size={19} />
+              Start a Battle Room
             </motion.button>
           </Link>
-          
-          <div className="flex items-center gap-4 w-full my-2">
-            <div className="h-px bg-white/10 flex-1"></div>
-            <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">OR JOIN EXISTING</span>
-            <div className="h-px bg-white/10 flex-1"></div>
+
+          <div className="flex items-center gap-3 w-full">
+            <div className="h-px flex-1" style={{ backgroundColor: '#222' }} />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#555' }}>or join</span>
+            <div className="h-px flex-1" style={{ backgroundColor: '#222' }} />
           </div>
 
-          <form onSubmit={handleJoin} className="flex items-center gap-2 bg-slate-900/80 p-2 rounded-2xl border border-white/10 focus-within:border-blue-500 transition-colors w-full">
-            <input 
-               type="text" 
-               placeholder="Enter Arena Code..." 
-               value={joinCode}
-               onChange={(e) => setJoinCode(e.target.value)}
-               className="bg-transparent border-none outline-none text-white px-4 py-2 w-full placeholder:text-slate-600 font-mono tracking-widest"
+          <form
+            onSubmit={handleJoin}
+            className="flex items-stretch w-full"
+            style={{ border: '1px solid #222' }}
+          >
+            <input
+              type="text"
+              placeholder="ARENA CODE"
+              value={joinCode}
+              onChange={e => setJoinCode(e.target.value)}
+              className="bg-transparent outline-none text-white px-4 py-3 w-full placeholder:font-mono font-mono tracking-widest text-sm"
+              style={{ color: '#EEE' }}
+              onFocus={e => (e.currentTarget.parentElement.style.borderColor = '#FF4500')}
+              onBlur={e => (e.currentTarget.parentElement.style.borderColor = '#222')}
             />
-            <button type="submit" className="glass-panel text-blue-400 hover:text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-600 transition-colors flex items-center gap-2 border-blue-500/30 shrink-0">
-              Join <ArrowRight size={18} />
+            <button
+              type="submit"
+              className="px-5 font-bold text-white shrink-0 transition-colors"
+              style={{ backgroundColor: '#FF4500' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FF6A00')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#FF4500')}
+            >
+              <ArrowRight size={16} />
             </button>
           </form>
         </div>
       </motion.div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 40 }}
+      {/* Feature cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 32 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.4 }}
-        className="grid md:grid-cols-3 gap-6 w-full max-w-5xl mt-24 z-10"
+        transition={{ duration: 0.5, delay: 0.25 }}
+        className="w-full max-w-5xl mt-24 z-10 grid md:grid-cols-3"
+        style={{ gap: '1px', backgroundColor: '#1a1a1a' }}
       >
-        <div className="glass-panel p-8 rounded-3xl flex flex-col items-center text-center gap-4 hover:border-purple-500/50 transition-colors">
-          <div className="p-4 bg-purple-500/20 rounded-2xl text-purple-400">
-            <UploadCloud size={32} />
+        {FEATURES.map((f) => (
+          <div
+            key={f.label}
+            className="flex flex-col gap-5 p-8 transition-colors group cursor-default"
+            style={{
+              backgroundColor: '#111',
+              borderTop: `2px solid ${f.accent}`,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#161616')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#111')}
+          >
+            <div className="flex items-center justify-between">
+              <div style={{ color: f.accent }}>{f.icon}</div>
+              <span className="font-mono text-xs font-bold" style={{ color: '#333' }}>{f.label}</span>
+            </div>
+            <h3 className="text-lg font-bold">{f.title}</h3>
+            <p className="text-sm leading-relaxed" style={{ color: '#666' }}>{f.desc}</p>
           </div>
-          <h3 className="text-xl font-bold">Secure Uploads</h3>
-          <p className="text-slate-400">Your files are encrypted and temporarily stored safely.</p>
-        </div>
-        
-        <div className="glass-panel p-8 rounded-3xl flex flex-col items-center text-center gap-4 hover:border-blue-500/50 transition-colors">
-          <div className="p-4 bg-blue-500/20 rounded-2xl text-blue-400">
-            <Gamepad2 size={32} />
-          </div>
-          <h3 className="text-xl font-bold">Challenge Mode</h3>
-          <p className="text-slate-400">Force receivers to solve puzzles or answer trivia to unlock.</p>
-        </div>
-
-        <div className="glass-panel p-8 rounded-3xl flex flex-col items-center text-center gap-4 hover:border-pink-500/50 transition-colors">
-          <div className="p-4 bg-pink-500/20 rounded-2xl text-pink-400">
-            <Swords size={32} />
-          </div>
-          <h3 className="text-xl font-bold">Live Battles</h3>
-          <p className="text-slate-400">Head-to-head fast-paced arcade mini-games for access.</p>
-        </div>
+        ))}
       </motion.div>
     </div>
   );

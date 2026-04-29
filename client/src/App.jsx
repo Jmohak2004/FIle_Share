@@ -18,10 +18,13 @@ function ThemeToggle() {
   return (
     <button
       onClick={() => setLight(v => !v)}
-      className="fixed top-4 right-4 z-50 p-2.5 rounded-xl glass-panel border border-white/10 text-slate-400 hover:text-white transition-colors"
+      className="fixed top-4 right-4 z-50 p-2.5 transition-colors"
+      style={{ backgroundColor: '#111', border: '1px solid #333', color: '#666' }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = '#FF4500'; e.currentTarget.style.color = '#FF4500'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.color = '#666'; }}
       title={light ? 'Switch to dark mode' : 'Switch to light mode'}
     >
-      {light ? <Moon size={18} /> : <Sun size={18} />}
+      {light ? <Moon size={16} /> : <Sun size={16} />}
     </button>
   );
 }
@@ -32,10 +35,13 @@ function HomeButton() {
   return (
     <Link
       to="/"
-      className="fixed top-4 left-4 z-50 flex items-center gap-1.5 px-3 py-2 rounded-xl glass-panel border border-white/10 text-slate-400 hover:text-white transition-colors text-sm"
+      className="fixed top-4 left-4 z-50 flex items-center gap-1.5 px-3 py-2 text-sm font-bold transition-colors"
+      style={{ backgroundColor: '#111', border: '1px solid #333', color: '#666' }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = '#FF4500'; e.currentTarget.style.color = '#FF4500'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.color = '#666'; }}
       title="Back to Home"
     >
-      <HomeIcon size={16} />
+      <HomeIcon size={14} />
       <span>Home</span>
     </Link>
   );

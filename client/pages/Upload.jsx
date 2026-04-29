@@ -130,17 +130,20 @@ export default function Upload() {
   if (uploadSuccess) {
     const shareUrl = `${window.location.origin}/battle/${fileId}`;
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6 relative bg-slate-950">
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 relative">
+        <div className="corner-tl" />
+        <div className="corner-br" />
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md glass-panel p-10 rounded-[2.5rem] shadow-2xl relative z-10 text-center"
+          className="w-full max-w-md card p-10 relative z-10 text-center"
+          style={{ borderTop: '2px solid #AAFF00' }}
         >
-          <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/30">
-            <CheckCircle size={40} className="text-green-400" />
+          <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: 'rgba(170,255,0,0.1)', border: '1px solid rgba(170,255,0,0.25)' }}>
+            <CheckCircle size={32} style={{ color: '#AAFF00' }} />
           </div>
-          <h2 className="text-3xl font-black mb-2 text-white">Payload Secured</h2>
-          <p className="text-slate-400 mb-4">Share this link or code with your opponent to initiate the match.</p>
+          <h2 className="text-3xl font-black mb-2">Payload Secured</h2>
+          <p className="mb-4 text-sm" style={{ color: '#666' }}>Share this link or code with your opponent to initiate the match.</p>
 
           {/* File preview on success screen */}
           {files.length === 1 && (
@@ -156,8 +159,8 @@ export default function Upload() {
             </div>
           )}
 
-          <div className="bg-slate-900/80 p-4 rounded-2xl flex items-center justify-between border border-white/5 mb-4 shadow-inner">
-            <div className="truncate text-left flex-1 min-w-0 mr-4 text-slate-300 font-mono text-sm">
+          <div className="flex items-center justify-between p-4 mb-4" style={{ backgroundColor: '#0e0e0e', border: '1px solid #222' }}>
+            <div className="truncate text-left flex-1 min-w-0 mr-4 font-mono text-sm" style={{ color: '#aaa' }}>
               {shareUrl}
             </div>
             <button
@@ -167,15 +170,19 @@ export default function Upload() {
                 toast.success('Link copied!');
                 setTimeout(() => setCopied(false), 2000);
               }}
-              className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors shrink-0"
+              className="p-3 transition-colors shrink-0"
+              style={{ backgroundColor: '#1a1a1a' }}
             >
-              {copied ? <CheckCircle size={20} className="text-green-400" /> : <Copy size={20} className="text-blue-400" />}
+              {copied ? <CheckCircle size={20} style={{ color: '#AAFF00' }} /> : <Copy size={20} style={{ color: '#FF4500' }} />}
             </button>
           </div>
 
           <button
             onClick={() => setShowQR(v => !v)}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition-colors mb-4 text-sm font-semibold"
+            className="w-full flex items-center justify-center gap-2 py-3 font-semibold text-sm transition-colors mb-4"
+            style={{ border: '1px solid #333', color: '#888' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#FF4500'; e.currentTarget.style.color = '#FF4500'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.color = '#888'; }}
           >
             <QrCode size={18} />
             {showQR ? 'Hide QR Code' : 'Show QR Code'}
@@ -198,20 +205,23 @@ export default function Upload() {
           </AnimatePresence>
 
           <div className="flex items-center gap-4 my-6">
-            <div className="h-px bg-white/10 flex-1"></div>
-            <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">OR SHARE CODE</span>
-            <div className="h-px bg-white/10 flex-1"></div>
+            <div className="h-px flex-1" style={{ backgroundColor: '#222' }} />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#555' }}>or share code</span>
+            <div className="h-px flex-1" style={{ backgroundColor: '#222' }} />
           </div>
 
-          <div className="text-3xl font-black tracking-widest text-center text-white neon-text mb-8 bg-slate-900/50 py-4 rounded-xl border border-white/5 font-mono select-all">
+          <div className="text-3xl font-black tracking-widest text-center neon-text mb-8 py-4 font-mono select-all" style={{ color: '#FF4500', backgroundColor: '#0e0e0e', border: '1px solid #222' }}>
             {fileId}
           </div>
 
           <button
             onClick={() => navigate(`/battle/${fileId}`)}
-            className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+            className="w-full py-4 text-white font-bold text-base transition-colors flex items-center justify-center gap-2"
+            style={{ backgroundColor: '#FF4500' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FF6A00')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#FF4500')}
           >
-            Enter Arena Now <ArrowRight size={20} />
+            Enter Arena Now <ArrowRight size={18} />
           </button>
         </motion.div>
       </div>
@@ -220,17 +230,20 @@ export default function Upload() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 relative">
+      <div className="corner-tl" />
+      <div className="corner-br" />
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-2xl glass-panel p-8 sm:p-12 rounded-[2.5rem] shadow-2xl relative z-10"
+        className="w-full max-w-2xl card p-8 sm:p-12 relative z-10"
+        style={{ borderTop: '2px solid #FF4500' }}
       >
-        <div className="absolute -top-6 right-6 p-4 bg-slate-900 rounded-2xl glass-panel text-green-400 font-medium flex items-center gap-2">
-          <ShieldCheck size={20} /> Secure Vault
+        <div className="absolute -top-4 right-8 px-4 py-2 font-bold text-xs uppercase tracking-widest flex items-center gap-2" style={{ backgroundColor: '#111', border: '1px solid #222', color: '#AAFF00' }}>
+          <ShieldCheck size={14} /> Secure Vault
         </div>
 
-        <h2 className="text-4xl font-black mb-2 tracking-tight">Prepare the Arena</h2>
-        <p className="text-slate-400 mb-10 text-lg">Upload your file(s) and choose how recipients will fight for it.</p>
+        <h2 className="text-4xl font-black mb-1 tracking-tight">Prepare the Arena</h2>
+        <p className="mb-10 text-sm" style={{ color: '#666' }}>Upload your file(s) and choose how recipients will fight for it.</p>
 
         <form onSubmit={handleUpload} className="flex flex-col gap-8">
 
@@ -241,11 +254,15 @@ export default function Upload() {
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`group relative rounded-3xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all p-8 ${
+              className={`group relative border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all p-8 ${
                 isDragging
-                  ? 'border-blue-400 bg-blue-900/20 scale-[1.01]'
-                  : 'border-slate-600 hover:border-blue-500 bg-slate-900/50 hover:bg-slate-800/50'
+                  ? 'scale-[1.01]'
+                  : ''
               }`}
+              style={{
+                borderColor: isDragging ? '#FF4500' : '#333',
+                backgroundColor: isDragging ? 'rgba(255,69,0,0.06)' : '#0e0e0e',
+              }}
             >
               <input
                 type="file"
@@ -256,19 +273,19 @@ export default function Upload() {
               />
               {files.length === 0 ? (
                 <>
-                  <UploadCloud size={48} className={`transition-colors ${isDragging ? 'text-blue-400' : 'text-slate-400 group-hover:text-blue-400'}`} />
-                  <p className="mt-4 font-semibold text-lg text-slate-300">
+                  <UploadCloud size={44} style={{ color: isDragging ? '#FF4500' : '#444', transition: 'color 0.2s' }} />
+                  <p className="mt-4 font-semibold text-base" style={{ color: '#ccc' }}>
                     {isDragging ? 'Drop files here!' : 'Click or drag & drop files'}
                   </p>
-                  <p className="text-sm text-slate-500">Multiple files OK — they'll be bundled into a zip · Max 50 MB each</p>
+                  <p className="text-sm mt-1" style={{ color: '#555' }}>Multiple files OK — bundled into a zip · Max 50 MB each</p>
                 </>
               ) : (
-                <p className="text-sm text-slate-400 font-semibold">
+                <p className="text-sm font-semibold" style={{ color: '#888' }}>
                   {files.length} file{files.length > 1 ? 's' : ''} selected · Click to add more
                 </p>
               )}
               {isDragging && (
-                <span className="mt-2 text-xs font-bold px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full animate-pulse">
+                <span className="mt-2 text-[11px] font-bold px-3 py-1 animate-pulse" style={{ backgroundColor: 'rgba(255,69,0,0.15)', color: '#FF4500' }}>
                   Release to add
                 </span>
               )}
@@ -278,11 +295,11 @@ export default function Upload() {
             {files.length > 0 && (
               <div className="mt-3 flex flex-col gap-2">
                 {files.map((f, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-slate-900/60 border border-white/5 rounded-xl px-3 py-2">
+                  <div key={i} className="flex items-center gap-3 px-3 py-2" style={{ backgroundColor: '#0e0e0e', border: '1px solid #222' }}>
                     {getFileIcon(f)}
                     <div className="flex-1 min-w-0">
-                      <p className="text-slate-300 text-sm font-mono truncate">{f.name}</p>
-                      <p className="text-slate-600 text-xs">{(f.size / 1024).toFixed(1)} KB</p>
+                      <p className="text-sm font-mono truncate" style={{ color: '#ccc' }}>{f.name}</p>
+                      <p className="text-xs" style={{ color: '#444' }}>{(f.size / 1024).toFixed(1)} KB</p>
                     </div>
                     <button
                       type="button"
@@ -303,41 +320,43 @@ export default function Upload() {
           </div>
 
           {/* Mode selector */}
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setMode('challenge')}
-              className={`relative flex flex-col items-center gap-3 p-6 rounded-2xl font-bold transition-all border ${
-                mode === 'challenge'
-                  ? 'bg-purple-900/40 border-purple-500 text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
-                  : 'bg-slate-900/50 border-white/5 text-slate-400 hover:bg-slate-800'
-              }`}
+              className="relative flex flex-col items-center gap-3 p-6 font-bold transition-all"
+              style={{
+                backgroundColor: mode === 'challenge' ? 'rgba(0,212,255,0.07)' : '#0e0e0e',
+                border: mode === 'challenge' ? '1px solid #00D4FF' : '1px solid #222',
+                color: mode === 'challenge' ? '#00D4FF' : '#666',
+              }}
             >
-              <Puzzle size={32} />
-              <span className="text-xl">Challenge</span>
-              <span className="text-xs font-normal opacity-80 mt-1">Recipient solves puzzles</span>
+              <Puzzle size={28} />
+              <span className="text-lg">Challenge</span>
+              <span className="text-xs font-normal opacity-70">Recipient solves puzzles</span>
             </button>
 
             <button
               type="button"
               onClick={() => setMode('battle')}
-              className={`relative flex flex-col items-center gap-3 p-6 rounded-2xl font-bold transition-all border ${
-                mode === 'battle'
-                  ? 'bg-rose-900/40 border-rose-500 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.2)]'
-                  : 'bg-slate-900/50 border-white/5 text-slate-400 hover:bg-slate-800'
-              }`}
+              className="relative flex flex-col items-center gap-3 p-6 font-bold transition-all"
+              style={{
+                backgroundColor: mode === 'battle' ? 'rgba(255,69,0,0.07)' : '#0e0e0e',
+                border: mode === 'battle' ? '1px solid #FF4500' : '1px solid #222',
+                color: mode === 'battle' ? '#FF4500' : '#666',
+              }}
             >
-              <Swords size={32} />
-              <span className="text-xl">Live Battle</span>
-              <span className="text-xs font-normal opacity-80 mt-1">Direct 1v1 PvP combat</span>
+              <Swords size={28} />
+              <span className="text-lg">Live Battle</span>
+              <span className="text-xs font-normal opacity-70">Direct 1v1 PvP combat</span>
             </button>
           </div>
 
           {/* Game type selector */}
           {mode === 'battle' && (
             <div className="flex flex-col gap-2">
-              <p className="text-sm text-slate-500 font-semibold uppercase tracking-widest">Choose Mini-Game</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: '#555' }}>Choose Mini-Game</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {[
                   { id: 'tic-tac-toe', label: 'Tic-Tac-Toe',          icon: '⚔️' },
                   { id: 'rps',         label: 'Rock Paper Scissors',   icon: '✊' },
@@ -348,11 +367,12 @@ export default function Upload() {
                   { id: 'quiz-battle', label: 'Quiz Battle',           icon: '🎯' },
                 ].map(g => (
                   <button key={g.id} type="button" onClick={() => setGameType(g.id)}
-                    className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-bold transition-all ${
-                      gameType === g.id
-                        ? 'bg-rose-900/40 border-rose-500 text-rose-300'
-                        : 'bg-slate-900/50 border-white/5 text-slate-400 hover:bg-slate-800'
-                    }`}
+                    className="flex items-center gap-2 p-3 text-sm font-bold transition-all"
+                    style={{
+                      backgroundColor: gameType === g.id ? 'rgba(255,69,0,0.08)' : '#0e0e0e',
+                      border: gameType === g.id ? '1px solid #FF4500' : '1px solid #222',
+                      color: gameType === g.id ? '#FF4500' : '#555',
+                    }}
                   >
                     <span>{g.icon}</span>{g.label}
                   </button>
@@ -362,32 +382,41 @@ export default function Upload() {
           )}
 
           {/* Optional fields */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <input
               type="email"
               placeholder="Your email (get notified when opponent joins)"
               value={senderEmail}
               onChange={(e) => setSenderEmail(e.target.value)}
-              className="bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-300 placeholder:text-slate-600 outline-none focus:border-blue-500 transition-colors"
+              className="px-4 py-3 text-sm outline-none transition-colors"
+              style={{ backgroundColor: '#0e0e0e', border: '1px solid #222', color: '#ccc' }}
+              onFocus={e => (e.currentTarget.style.borderColor = '#FF4500')}
+              onBlur={e => (e.currentTarget.style.borderColor = '#222')}
             />
             <input
               type="url"
               placeholder="Webhook URL (notified on download, optional)"
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
-              className="bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-300 placeholder:text-slate-600 outline-none focus:border-blue-500 transition-colors"
+              className="px-4 py-3 text-sm outline-none transition-colors"
+              style={{ backgroundColor: '#0e0e0e', border: '1px solid #222', color: '#ccc' }}
+              onFocus={e => (e.currentTarget.style.borderColor = '#FF4500')}
+              onBlur={e => (e.currentTarget.style.borderColor = '#222')}
             />
           </div>
 
           <button
             type="submit"
             disabled={loading || files.length === 0}
-            className="w-full mt-2 py-5 bg-white text-slate-950 rounded-2xl font-bold text-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.02] active:scale-95"
+            className="w-full mt-2 py-4 text-white font-bold text-base transition-all flex items-center justify-center gap-2 disabled:opacity-40 active:scale-95"
+            style={{ backgroundColor: '#FF4500' }}
+            onMouseEnter={e => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#FF6A00')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#FF4500')}
           >
             {loading ? (
               <span className="animate-pulse">Forging Arena…</span>
             ) : (
-              <><Zap size={20} />Create Link & Upload <UploadCloud size={20} /></>
+              <><Zap size={18} />Create Link & Upload <UploadCloud size={18} /></>
             )}
           </button>
         </form>
