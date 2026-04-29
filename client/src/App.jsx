@@ -1,7 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useState, useEffect } from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Home as HomeIcon } from 'lucide-react';
 import Home from '../pages/Home';
 import Upload from '../pages/Upload';
 import Battle from '../pages/Battle';
@@ -26,6 +26,21 @@ function ThemeToggle() {
   );
 }
 
+function HomeButton() {
+  const { pathname } = useLocation();
+  if (pathname === '/') return null;
+  return (
+    <Link
+      to="/"
+      className="fixed top-4 left-4 z-50 flex items-center gap-1.5 px-3 py-2 rounded-xl glass-panel border border-white/10 text-slate-400 hover:text-white transition-colors text-sm"
+      title="Back to Home"
+    >
+      <HomeIcon size={16} />
+      <span>Home</span>
+    </Link>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -41,6 +56,7 @@ function App() {
         richColors
       />
       <ThemeToggle />
+      <HomeButton />
       <Routes>
         <Route path="/"              element={<Home />} />
         <Route path="/upload"        element={<Upload />} />
