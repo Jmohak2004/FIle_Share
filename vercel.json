@@ -4,5 +4,11 @@
   "installCommand": "echo skip",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "env": {
+    "VITE_API_URL": {
+      "description": "Your Render server URL (e.g., https://your-app.onrender.com)",
+      "required": true
+    }
+  }
 }
